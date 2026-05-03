@@ -2,92 +2,71 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>FUN OWNER Push Admin</title>
+  <title>FUN OWNER Notification</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    * {
-      box-sizing: border-box;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      background:radial-gradient(circle at top,#06382d,#050505 60%);
+      color:white;
+      font-family:Arial,sans-serif;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
     }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #0c2b22, #030303 55%);
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
+    .box{
+      width:100%;
+      max-width:430px;
+      background:rgba(10,10,10,.92);
+      border:1px solid rgba(0,255,179,.25);
+      border-radius:22px;
+      padding:22px;
+      text-align:center;
+      box-shadow:0 0 35px rgba(0,255,179,.18);
     }
-
-    .box {
-      width: 100%;
-      max-width: 430px;
-      background: rgba(10, 10, 10, 0.9);
-      border: 1px solid rgba(0, 255, 180, 0.25);
-      border-radius: 20px;
-      padding: 22px;
-      box-shadow: 0 0 35px rgba(0, 255, 180, 0.18);
+    h2{
+      margin:0 0 8px;
+      color:#00ffb3;
+      font-size:24px;
     }
-
-    h2 {
-      margin: 0 0 8px;
-      color: #00ffb3;
-      text-align: center;
+    p{
+      color:#bdbdbd;
+      font-size:14px;
+      margin:8px 0 16px;
     }
-
-    p {
-      text-align: center;
-      color: #aaa;
-      font-size: 14px;
+    button{
+      width:100%;
+      padding:14px;
+      margin-top:12px;
+      border:none;
+      border-radius:14px;
+      background:linear-gradient(135deg,#00ffb3,#00aaff);
+      color:#000;
+      font-size:16px;
+      font-weight:900;
+      cursor:pointer;
     }
-
-    input, textarea {
-      width: 100%;
-      margin-top: 12px;
-      padding: 13px;
-      border-radius: 12px;
-      border: 1px solid #333;
-      outline: none;
-      background: #050505;
-      color: white;
-      font-size: 14px;
+    textarea{
+      width:100%;
+      height:130px;
+      margin-top:15px;
+      background:#050505;
+      color:#00ffb3;
+      border:1px solid #333;
+      border-radius:12px;
+      padding:10px;
+      resize:none;
+      font-size:12px;
     }
-
-    textarea {
-      height: 95px;
-      resize: none;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 12px;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #00ffb3, #00aaff);
-      color: #000;
-      font-weight: 900;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .danger {
-      background: linear-gradient(135deg, #ff3131, #ff9a00);
-    }
-
-    .status {
-      margin-top: 13px;
-      text-align: center;
-      color: #00ffb3;
-      font-size: 13px;
-      word-break: break-word;
-    }
-
-    .hidden {
-      display: none;
+    .status{
+      margin-top:14px;
+      color:#00ffb3;
+      font-size:13px;
+      word-break:break-word;
     }
   </style>
 </head>
@@ -95,30 +74,18 @@
 <body>
 
 <div class="box">
-  <h2>FUN OWNER Push Admin</h2>
-  <p>Login karke website users ko notification bhejo.</p>
+  <h2>FUN OWNER Notification</h2>
+  <p>Notification allow karo. Token Firebase me save ho jayega.</p>
 
-  <div id="loginBox">
-    <input id="email" type="email" placeholder="Admin email">
-    <input id="password" type="password" placeholder="Admin password">
-    <button onclick="loginAdmin()">Login</button>
-  </div>
-
-  <div id="adminBox" class="hidden">
-    <input id="title" type="text" placeholder="Notification title" value="FUN OWNER">
-    <textarea id="body" placeholder="Notification message">New update available!</textarea>
-    <input id="link" type="text" placeholder="Click link, example: https://yourdomain.com" value="">
-    <input id="icon" type="text" placeholder="Icon URL optional" value="">
-
-    <button onclick="sendPush()">Send Push Notification</button>
-    <button class="danger" onclick="logoutAdmin()">Logout</button>
-  </div>
+  <button onclick="startNotification()">Allow Notification</button>
+  <button onclick="testNotification()">Test Notification</button>
 
   <div class="status" id="status">Status: Ready</div>
+  <textarea id="tokenBox" readonly placeholder="FCM token yaha show hoga..."></textarea>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 
 <script>
@@ -132,90 +99,103 @@
     appId: "1:391038052290:android:fe4c061fdede429644185b"
   };
 
+  const vapidKey = "BHdlfi-Jn1HMSx9763VDwWx793ANAMIRxUh6_FJ63us1KsPoBI93sKjelyDA0ADfBMLS1wXRd-1UT36TOhinHWA";
+
   firebase.initializeApp(firebaseConfig);
 
-  const auth = firebase.auth();
+  const messaging = firebase.messaging();
   const db = firebase.database();
 
-  function setStatus(text) {
+  function setStatus(text){
     document.getElementById("status").innerText = "Status: " + text;
   }
 
-  auth.onAuthStateChanged(function(user) {
-    if (user) {
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("adminBox").classList.remove("hidden");
-      setStatus("Logged in: " + user.email + " | UID: " + user.uid);
-    } else {
-      document.getElementById("loginBox").classList.remove("hidden");
-      document.getElementById("adminBox").classList.add("hidden");
-      setStatus("Ready");
-    }
-  });
-
-  async function loginAdmin() {
-    try {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-
-      if (!email || !password) {
-        alert("Email aur password do.");
-        return;
-      }
-
-      setStatus("Logging in...");
-      await auth.signInWithEmailAndPassword(email, password);
-    } catch (e) {
-      console.error(e);
-      setStatus("Login error: " + e.message);
-      alert(e.message);
-    }
+  function safeKey(token){
+    return token.replace(/[.#$/\[\]]/g, "_");
   }
 
-  async function logoutAdmin() {
-    await auth.signOut();
-  }
-
-  async function sendPush() {
-    try {
-      const user = auth.currentUser;
-
-      if (!user) {
-        alert("Pehle login karo.");
+  async function startNotification(){
+    try{
+      if(!("Notification" in window)){
+        setStatus("Notification supported nahi hai");
+        alert("Ye browser notification support nahi karta.");
         return;
       }
 
-      const title = document.getElementById("title").value.trim();
-      const body = document.getElementById("body").value.trim();
-      const link = document.getElementById("link").value.trim();
-      const icon = document.getElementById("icon").value.trim();
-
-      if (!title || !body) {
-        alert("Title aur message required hai.");
+      if(!("serviceWorker" in navigator)){
+        setStatus("Service Worker supported nahi hai");
+        alert("Ye browser Service Worker support nahi karta.");
         return;
       }
 
-      setStatus("Sending request...");
+      setStatus("Permission asking...");
+      const permission = await Notification.requestPermission();
 
-      await db.ref("PushRequests").push({
-        title: title,
-        body: body,
-        link: link,
-        icon: icon,
-        createdAt: Date.now(),
-        createdByUid: user.uid,
-        createdByEmail: user.email,
-        status: "pending"
+      if(permission !== "granted"){
+        setStatus("Permission blocked");
+        alert("Notification permission allow nahi hua.");
+        return;
+      }
+
+      setStatus("Service worker registering...");
+
+      const registration = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+
+      setStatus("Token generating...");
+
+      const token = await messaging.getToken({
+        vapidKey: vapidKey,
+        serviceWorkerRegistration: registration
       });
 
-      setStatus("Push request created. Cloud Function ab notification bhejega.");
-      alert("Notification request sent!");
+      if(!token){
+        setStatus("Token generate nahi hua");
+        alert("Token generate nahi hua.");
+        return;
+      }
 
-    } catch (e) {
+      document.getElementById("tokenBox").value = token;
+
+      await db.ref("WebPushTokens/" + safeKey(token)).set({
+        token: token,
+        createdAt: Date.now(),
+        lastSeen: Date.now(),
+        userAgent: navigator.userAgent,
+        url: location.href
+      });
+
+      setStatus("Token saved successfully");
+      console.log("FCM Token:", token);
+
+    }catch(e){
       console.error(e);
       setStatus("Error: " + e.message);
       alert(e.message);
     }
+  }
+
+  messaging.onMessage(function(payload){
+    console.log("Foreground message:", payload);
+
+    const title = payload.notification?.title || payload.data?.title || "FUN OWNER";
+    const body = payload.notification?.body || payload.data?.body || "New notification";
+    const icon = payload.notification?.icon || payload.data?.icon || "";
+
+    new Notification(title, {
+      body: body,
+      icon: icon
+    });
+  });
+
+  function testNotification(){
+    if(Notification.permission !== "granted"){
+      alert("Pehle Allow Notification dabao.");
+      return;
+    }
+
+    new Notification("FUN OWNER TEST", {
+      body: "Bhai website notification working hai!"
+    });
   }
 </script>
 
