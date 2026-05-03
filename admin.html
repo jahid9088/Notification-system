@@ -1,1 +1,240 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>FUN OWNER Push Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      background:radial-gradient(circle at top,#102b24,#050505 60%);
+      color:white;
+      font-family:Arial,sans-serif;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+    .box{
+      width:100%;
+      max-width:460px;
+      background:rgba(10,10,10,.94);
+      border:1px solid rgba(0,255,179,.25);
+      border-radius:22px;
+      padding:22px;
+      box-shadow:0 0 35px rgba(0,255,179,.18);
+    }
+    h2{
+      margin:0 0 8px;
+      text-align:center;
+      color:#00ffb3;
+    }
+    p{
+      text-align:center;
+      color:#aaa;
+      font-size:14px;
+    }
+    input,textarea{
+      width:100%;
+      margin-top:12px;
+      padding:13px;
+      border-radius:13px;
+      border:1px solid #333;
+      background:#050505;
+      color:white;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{
+      height:95px;
+      resize:none;
+    }
+    button{
+      width:100%;
+      margin-top:12px;
+      padding:14px;
+      border:none;
+      border-radius:13px;
+      background:linear-gradient(135deg,#00ffb3,#00aaff);
+      color:#000;
+      font-weight:900;
+      font-size:15px;
+      cursor:pointer;
+    }
+    .danger{
+      background:linear-gradient(135deg,#ff3131,#ff9a00);
+    }
+    .status{
+      margin-top:13px;
+      text-align:center;
+      color:#00ffb3;
+      font-size:13px;
+      word-break:break-word;
+    }
+    .hidden{display:none}
+    .small{
+      margin-top:12px;
+      padding:10px;
+      background:#060606;
+      border:1px solid #222;
+      border-radius:12px;
+      color:#bbb;
+      font-size:12px;
+      line-height:1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>FUN OWNER Push Admin</h2>
+  <p>Admin login karke notification request send karo.</p>
+
+  <div id="loginBox">
+    <input id="email" type="email" placeholder="Admin email">
+    <input id="password" type="password" placeholder="Admin password">
+    <button onclick="loginAdmin()">Login</button>
+  </div>
+
+  <div id="adminBox" class="hidden">
+    <input id="title" type="text" placeholder="Notification title" value="FUN OWNER">
+    <textarea id="body" placeholder="Notification message">New update available!</textarea>
+    <input id="link" type="text" placeholder="Click link" value="https://jahid9088.github.io/Notification-system/">
+    <input id="icon" type="text" placeholder="Icon image URL optional">
+
+    <button onclick="sendPush()">Send Push Notification</button>
+    <button class="danger" onclick="logoutAdmin()">Logout</button>
+
+    <div class="small" id="lastBox">Last push status yaha show hoga.</div>
+  </div>
+
+  <div class="status" id="status">Status: Ready</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCB1gPJXybWGvJR3APcdUp98CMAPSyAVmo",
+    authDomain: "funownernullnullprotejet.firebaseapp.com",
+    databaseURL: "https://funownernullnullprotejet-default-rtdb.firebaseio.com",
+    projectId: "funownernullnullprotejet",
+    storageBucket: "funownernullnullprotejet.firebasestorage.app",
+    messagingSenderId: "391038052290",
+    appId: "1:391038052290:android:fe4c061fdede429644185b"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const auth = firebase.auth();
+  const db = firebase.database();
+
+  function setStatus(text){
+    document.getElementById("status").innerText = "Status: " + text;
+  }
+
+  auth.onAuthStateChanged(function(user){
+    if(user){
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("adminBox").classList.remove("hidden");
+      setStatus("Logged in: " + user.email);
+      watchLastPush();
+    }else{
+      document.getElementById("loginBox").classList.remove("hidden");
+      document.getElementById("adminBox").classList.add("hidden");
+      setStatus("Ready");
+    }
+  });
+
+  async function loginAdmin(){
+    try{
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if(!email || !password){
+        alert("Email/password do.");
+        return;
+      }
+
+      setStatus("Logging in...");
+      await auth.signInWithEmailAndPassword(email, password);
+
+    }catch(e){
+      console.error(e);
+      setStatus("Login error: " + e.message);
+      alert(e.message);
+    }
+  }
+
+  async function logoutAdmin(){
+    await auth.signOut();
+  }
+
+  async function sendPush(){
+    try{
+      const user = auth.currentUser;
+
+      if(!user){
+        alert("Pehle login karo.");
+        return;
+      }
+
+      const title = document.getElementById("title").value.trim();
+      const body = document.getElementById("body").value.trim();
+      const link = document.getElementById("link").value.trim();
+      const icon = document.getElementById("icon").value.trim();
+
+      if(!title || !body){
+        alert("Title aur message required hai.");
+        return;
+      }
+
+      setStatus("Creating push request...");
+
+      await db.ref("PushRequests").push({
+        title: title,
+        body: body,
+        link: link,
+        icon: icon,
+        createdAt: Date.now(),
+        createdByUid: user.uid,
+        createdByEmail: user.email,
+        status: "pending"
+      });
+
+      setStatus("Push request created");
+      alert("Request sent. Cloud Function notification bhejega.");
+
+    }catch(e){
+      console.error(e);
+      setStatus("Error: " + e.message);
+      alert(e.message);
+    }
+  }
+
+  function watchLastPush(){
+    db.ref("PushRequests").limitToLast(1).on("value", function(snap){
+      let text = "No push found.";
+      snap.forEach(function(child){
+        const d = child.val() || {};
+        text =
+          "Title: " + (d.title || "") + "<br>" +
+          "Status: " + (d.status || "") + "<br>" +
+          "Success: " + (d.successCount || 0) + "<br>" +
+          "Failed: " + (d.failureCount || 0) + "<br>" +
+          "Error: " + (d.error || "No error");
+      });
+      document.getElementById("lastBox").innerHTML = text;
+    });
+  }
+</script>
+
+</body>
+</html>
