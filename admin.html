@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -57,7 +56,7 @@
       width:100%;
       margin-top:12px;
       padding:14px;
-      border:none;
+      border:0;
       border-radius:13px;
       background:linear-gradient(135deg,#00ffb3,#00aaff);
       color:#000;
@@ -65,26 +64,13 @@
       font-size:15px;
       cursor:pointer;
     }
-    .danger{
-      background:linear-gradient(135deg,#ff3131,#ff9a00);
-    }
     .status{
       margin-top:13px;
       text-align:center;
       color:#00ffb3;
       font-size:13px;
       word-break:break-word;
-    }
-    .hidden{display:none}
-    .small{
-      margin-top:12px;
-      padding:10px;
-      background:#060606;
-      border:1px solid #222;
-      border-radius:12px;
-      color:#bbb;
-      font-size:12px;
-      line-height:1.5;
+      white-space:pre-wrap;
     }
   </style>
 </head>
@@ -93,146 +79,85 @@
 
 <div class="box">
   <h2>FUN OWNER Push Admin</h2>
-  <p>Admin login karke notification request send karo.</p>
+  <p>Free Worker se notification push karo.</p>
 
-  <div id="loginBox">
-    <input id="email" type="email" placeholder="Admin email">
-    <input id="password" type="password" placeholder="Admin password">
-    <button onclick="loginAdmin()">Login</button>
-  </div>
+  <input id="adminSecret" type="password" placeholder="Admin secret/password">
+  <input id="title" type="text" placeholder="Notification title" value="FUN OWNER">
+  <textarea id="body" placeholder="Notification message">New update available!</textarea>
+  <input id="link" type="text" placeholder="Click link" value="https://jahid9088.github.io/Notification-system/">
+  <input id="icon" type="text" placeholder="Icon image URL optional">
 
-  <div id="adminBox" class="hidden">
-    <input id="title" type="text" placeholder="Notification title" value="FUN OWNER">
-    <textarea id="body" placeholder="Notification message">New update available!</textarea>
-    <input id="link" type="text" placeholder="Click link" value="https://jahid9088.github.io/Notification-system/">
-    <input id="icon" type="text" placeholder="Icon image URL optional">
-
-    <button onclick="sendPush()">Send Push Notification</button>
-    <button class="danger" onclick="logoutAdmin()">Logout</button>
-
-    <div class="small" id="lastBox">Last push status yaha show hoga.</div>
-  </div>
+  <button onclick="sendPush()">Send Push Notification</button>
 
   <div class="status" id="status">Status: Ready</div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
-
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCB1gPJXybWGvJR3APcdUp98CMAPSyAVmo",
-    authDomain: "funownernullnullprotejet.firebaseapp.com",
-    databaseURL: "https://funownernullnullprotejet-default-rtdb.firebaseio.com",
-    projectId: "funownernullnullprotejet",
-    storageBucket: "funownernullnullprotejet.firebasestorage.app",
-    messagingSenderId: "391038052290",
-    appId: "1:391038052290:android:fe4c061fdede429644185b"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-
-  const auth = firebase.auth();
-  const db = firebase.database();
+  const WORKER_URL = "PASTE_CLOUDFLARE_WORKER_URL_HERE";
 
   function setStatus(text){
     document.getElementById("status").innerText = "Status: " + text;
   }
 
-  auth.onAuthStateChanged(function(user){
-    if(user){
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("adminBox").classList.remove("hidden");
-      setStatus("Logged in: " + user.email);
-      watchLastPush();
-    }else{
-      document.getElementById("loginBox").classList.remove("hidden");
-      document.getElementById("adminBox").classList.add("hidden");
-      setStatus("Ready");
-    }
-  });
-
-  async function loginAdmin(){
-    try{
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-
-      if(!email || !password){
-        alert("Email/password do.");
-        return;
-      }
-
-      setStatus("Logging in...");
-      await auth.signInWithEmailAndPassword(email, password);
-
-    }catch(e){
-      console.error(e);
-      setStatus("Login error: " + e.message);
-      alert(e.message);
-    }
-  }
-
-  async function logoutAdmin(){
-    await auth.signOut();
-  }
-
   async function sendPush(){
     try{
-      const user = auth.currentUser;
-
-      if(!user){
-        alert("Pehle login karo.");
-        return;
-      }
-
+      const adminSecret = document.getElementById("adminSecret").value.trim();
       const title = document.getElementById("title").value.trim();
       const body = document.getElementById("body").value.trim();
       const link = document.getElementById("link").value.trim();
       const icon = document.getElementById("icon").value.trim();
+
+      if(!adminSecret){
+        alert("Admin secret/password do.");
+        return;
+      }
 
       if(!title || !body){
         alert("Title aur message required hai.");
         return;
       }
 
-      setStatus("Creating push request...");
+      if(WORKER_URL === "PASTE_CLOUDFLARE_WORKER_URL_HERE"){
+        alert("Pehle admin.html me WORKER_URL paste karo.");
+        return;
+      }
 
-      await db.ref("PushRequests").push({
-        title: title,
-        body: body,
-        link: link,
-        icon: icon,
-        createdAt: Date.now(),
-        createdByUid: user.uid,
-        createdByEmail: user.email,
-        status: "pending"
+      setStatus("Sending push...");
+
+      const res = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          adminSecret: adminSecret,
+          title: title,
+          body: body,
+          link: link,
+          icon: icon
+        })
       });
 
-      setStatus("Push request created");
-      alert("Request sent. Cloud Function notification bhejega.");
+      const data = await res.json();
+
+      if(data.ok){
+        setStatus(
+          "Push sent ✅\n" +
+          "Total tokens: " + data.totalTokens + "\n" +
+          "Success: " + data.successCount + "\n" +
+          "Failed: " + data.failureCount
+        );
+        alert("Notification sent!");
+      }else{
+        setStatus("Error ❌\n" + JSON.stringify(data, null, 2));
+        alert(data.error || "Push failed");
+      }
 
     }catch(e){
       console.error(e);
       setStatus("Error: " + e.message);
       alert(e.message);
     }
-  }
-
-  function watchLastPush(){
-    db.ref("PushRequests").limitToLast(1).on("value", function(snap){
-      let text = "No push found.";
-      snap.forEach(function(child){
-        const d = child.val() || {};
-        text =
-          "Title: " + (d.title || "") + "<br>" +
-          "Status: " + (d.status || "") + "<br>" +
-          "Success: " + (d.successCount || 0) + "<br>" +
-          "Failed: " + (d.failureCount || 0) + "<br>" +
-          "Error: " + (d.error || "No error");
-      });
-      document.getElementById("lastBox").innerHTML = text;
-    });
   }
 </script>
 
